@@ -28,51 +28,59 @@ var bigrams = new Map();
 var freq = new Map();
 
 try {
-    if (ngramMangling) {
-	// Load the source text from clean word list
-	let sentences = new Array(0);
-	let wordlist = fs.readFileSync('./lists/clean.txt').toString();
-	sentences = wordlist.split('\n');
-	
-	// for each sentence
-	sentences.forEach(function(sentence) {
-	    // for every word in the sentence
-	    let prev = "";
-	    sentence.split(' ').forEach(function(word) {
-		// increment frequency map
-		if (freq.get(word) === undefined) {
-		    freq.set(word,1);
-		} else {
-		    freq.set(word,freq.get(word)+1);
-		}
+  if (ngramMangling) {
+  	// Load the source text from clean word list
+  	let sentences = new Array(0);
+  	// let wordlist = fs.readFileSync('./lists/clean.txt').toString();
+    // a bunch of books from the Gutenberg project
+    let wordlist = fs.readFileSync('./lists/books.txt').toString();
+  	sentences = wordlist.split('\n');
 
-		// increment bigrams map
-		if (prev != "") {
-		    let bigram = [prev,word];
-		    if (bigrams.get(bigram) === undefined) {
-			bigrams.set(bigram,1);
-		    } else {
-			bigrams.set(bigram,bigrams.get(bigram)+1);
-		    }
-		}
-		prev = word;
-	    })
-	})
-    } else {
-	//lists.push(fs.readFileSync('./lists/adjectives.txt').toString().split('\r\n'));
-	lists.push(require('./lists/adjectives-2.json').adjectives);
-	console.log(lists[0].length + ' adjectives');
-	//lists.push(fs.readFileSync('./lists/adverbs.txt').toString().split('\n'));
-	lists.push(require('./lists/adverbs-2.json').adverbs);
-	console.log(lists[1].length + ' adverbs');
-	//lists.push(fs.readFileSync('./lists/nouns.txt').toString().split('\r\n'));
-	lists.push(require('./lists/nouns-2.json').nouns);
-	console.log(lists[2].length + ' nouns');
-	//lists.push(fs.readFileSync('./lists/verbs.txt').toString().split('\r\n'));
-	let vlist = require('./lists/verbs-tense.json').verbs.map(v => v.present);
-	lists.push(vlist);
-	console.log(lists[3].length + ' verbs');
-    }
+  	// for each sentence
+  	sentences.forEach(function(sentence) {
+  	    // for every word in the sentence
+  	    let prev = "";
+  	    sentence.split(' ').forEach(function(word) {
+      		// increment frequency map
+          // make sure the word is lowercase, and remove everything that's not
+          // a letter or an apostrophe (for contractions)
+          word = word.toLowerCase().replace(/[^a-zA-Z']+/g, '')
+      		if (freq.get(word) === undefined) {
+      		    freq.set(word,1);
+      		} else {
+      		    freq.set(word,freq.get(word)+1);
+      		}
+
+      		// increment bigrams map
+      		if (prev != "") {
+    		    let bigram = JSON.stringify([prev,word]);
+    		    if (bigrams.get(bigram) === undefined) {
+    			     bigrams.set(bigram,1);
+    		    } else {
+    			     bigrams.set(bigram,bigrams.get(bigram)+1);
+    		    }
+      		}
+      		prev = word;
+  	    })
+  	})
+    // bigrams.forEach((v,k) => {
+    //   if (v > 1) { console.log(k, v) }
+    // })
+  } else {
+  	//lists.push(fs.readFileSync('./lists/adjectives.txt').toString().split('\r\n'));
+  	lists.push(require('./lists/adjectives-2.json').adjectives);
+  	console.log(lists[0].length + ' adjectives');
+  	//lists.push(fs.readFileSync('./lists/adverbs.txt').toString().split('\n'));
+  	lists.push(require('./lists/adverbs-2.json').adverbs);
+  	console.log(lists[1].length + ' adverbs');
+  	//lists.push(fs.readFileSync('./lists/nouns.txt').toString().split('\r\n'));
+  	lists.push(require('./lists/nouns-2.json').nouns);
+  	console.log(lists[2].length + ' nouns');
+  	//lists.push(fs.readFileSync('./lists/verbs.txt').toString().split('\r\n'));
+  	let vlist = require('./lists/verbs-tense.json').verbs.map(v => v.present);
+  	lists.push(vlist);
+  	console.log(lists[3].length + ' verbs');
+  }
 
 } catch(e) {
     console.error(e);
@@ -107,7 +115,7 @@ app.listen(2095, function () {
 
 // TESTING function mangleMe(body, text, res){
 function mangleMe(body, res) {
-    
+
     // returns the path to the word list which is separated by `\n`
     // const wordListPath = require('word-list');
     // const wordArray = fs.readFileSync(wordListPath, 'utf8').split('\n');
@@ -116,7 +124,7 @@ function mangleMe(body, res) {
     // TESTING let acro = text.split(' ')[0];
     // TESTING .....................................................
     let acro = body.text.split(' ')[0];
-    
+
     if(!acro || acro === ''){
         res.send('Please include an acronym with your request.');
         return;
@@ -128,7 +136,7 @@ function mangleMe(body, res) {
         res.send("Let's not be silly. Keep them " + maxLength + " characters or less, mmmkay?");
         return;
     }
-    
+
     if(/[^a-z]/i.test(acro)){
         res.send('Sorry, we can only do letters.');
         return;
@@ -151,7 +159,7 @@ function mangleMe(body, res) {
     console.log(newWords);
 
     let message = ''
-    
+
     if (body.twitter) {
       message = acro.toUpperCase() + ':'
       newWords.forEach(w => {
@@ -159,12 +167,12 @@ function mangleMe(body, res) {
       })
     } else {
       message = '*' + acro.toUpperCase() + ':*';
-    
+
       newWords.forEach(w => {
           message += '\n<https://en.wiktionary.org/wiki/' + w + '|' + w.charAt(0).toUpperCase() + w.substr(1) + '>';
       });
     }
-    
+
     let payload = {
         response_type: 'in_channel',
         text: message
@@ -199,51 +207,52 @@ function partsMangler(acro,words,pattern){
 }
 
 function partsManglerNGram(acro,words){
-    
-    words = words || [];
 
-    if(words && words.length >= acro.length){
-        return words;
-    }
+  words = words || [];
 
-    let word = '';
+  if(words && words.length >= acro.length){
+      return words;
+  }
 
-    if (words.length == 0) {
-	// Pick random word starting with the correct letter
-	let possible = [];
-	for (var wordFromFreq of freq.keys()) {
-	    if (wordFromFreq.charAt(0).toLowerCase() === acro.charAt(words.length).toLowerCase())
-		possible.push(wordFromFreq);
-	}
-	word = possible[Math.floor(Math.random() * possible.length)];
+  let word = '';
 
-	console.log(acro.charAt(words.length).toUpperCase() + " - Picked random word: " + word + " from " + possible.length + " options.");
+  if (words.length == 0) {
+  	// Pick random word starting with the correct letter
+  	let possible = [];
+  	for (var [wordFromFreq, f] of freq) {
+	    if (wordFromFreq.charAt(0).toLowerCase() === acro.charAt(words.length).toLowerCase() && f > 200)
+  		  possible.push(wordFromFreq);
+  	}
+  	word = possible[Math.floor(Math.random() * possible.length)];
 
-    } else {
-	// Pick word which results in the highest P(word | previousWord)
-	// P(word | previousWord) = count(previousWord followed by word)
-	// Given that previousWord is already set
+  	console.log(acro.charAt(words.length).toUpperCase() + " - Picked random word: " + word + " from " + possible.length + " options.");
 
-	let highestFreq = -1;
-	let bestMatchingWord = '';
-	let previousWord = words[words.length - 1];
+  } else {
+  	// Pick word which results in the highest P(word | previousWord)
+  	// P(word | previousWord) = count(previousWord followed by word)
+  	// Given that previousWord is already set
 
-	let matchCount = 0;
+  	let highestFreq = -1;
+  	let bestMatchingWord = '';
+  	let previousWord = words[words.length - 1];
 
-	for (var [key, value] of bigrams) {
+  	let matchCount = 0;
+
+  	for (var [key, value] of bigrams) {
 	    // If the first word of the bigram is the previous word and the second word
 	    // of the bigram starts with the correct letter
+      key = JSON.parse(key)
 	    if (key[0].toLowerCase() === previousWord.toLowerCase()
-		&& key[1].charAt(0).toLowerCase() === acro.charAt(words.length).toLowerCase()) {
+  		&& key[1].charAt(0).toLowerCase() === acro.charAt(words.length).toLowerCase()) {
 
-		matchCount++;
+  		matchCount++;
 
-		// If it is the best matching so far
-		if (value > highestFreq) {
-		    highestFreq = value;
-		    bestMatchingWord = key[1];
-		}
-	    }
+  		// If it is the best matching so far
+  		if (value > highestFreq) {
+  		    highestFreq = value;
+  		    bestMatchingWord = key[1];
+  		}
+    }
 	}
 
 	word = bestMatchingWord;
@@ -251,7 +260,7 @@ function partsManglerNGram(acro,words){
 	    console.log(acro.charAt(words.length).toUpperCase() + " - Best matching word: " +
 			bestMatchingWord + " from " + matchCount + " possibilities. Freq " + highestFreq);
 
-	
+
 	// If there is no match
 	if (highestFreq == -1) {
 	    // Just pick a word at random
@@ -266,10 +275,10 @@ function partsManglerNGram(acro,words){
     }
 
     word = word.toLowerCase();
-    
+
     words.push(word);
-    
-    if(words.length < acro.length){ 
+
+    if(words.length < acro.length){
         return partsManglerNGram(acro,words);
     } else {
         return words;
