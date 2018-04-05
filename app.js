@@ -5,7 +5,7 @@ const fs = require('fs');
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 const ngramMangling = true;
-
+const MIN_FREQUENCY_TO_STORE = 2; // erase all words with frequency of 1
 // Define the possible patterns
 // 0 = adjective
 // 1 = adverb
@@ -60,6 +60,7 @@ try {
 		  // make sure the word is lowercase, and remove everything that's not
 		  // a letter or an apostrophe (for contractions)
 		  word = word.toLowerCase().replace(/[^a-zA-Z']+/g, '')
+		  if (word.length == 0) return;
       		  if (freq.get(word) === undefined) {
       		      freq.set(word,1);
       		  } else {
@@ -78,10 +79,29 @@ try {
       		  prev = word;
   	      })
   	  })
+	  
+	  console.log("Trimming maps for memory");
+	  let wordCount = freq.size;
+	  let wordsErased = 0;
+	  freq.forEach((frequency,key) => {
+	      if (frequency < MIN_FREQUENCY_TO_STORE) {
+		  freq.delete(key);
+		  
+		  // also delete bigrams with the key in the first or the second position
+		  // ...
+
+		  wordsErased++;
+	      }
+	  })
+	  let remaining = wordCount - wordsErased;
+	  console.log("Deleted " + wordsErased + " of " + wordCount + " words (" + remaining + " remain)");
       }
     // bigrams.forEach((v,k) => {
     //   if (v > 1) { console.log(k, v) }
-    // })
+      // })
+
+      console.log("Read in word lists");
+            
   } else {
   	//lists.push(fs.readFileSync('./lists/adjectives.txt').toString().split('\r\n'));
   	lists.push(require('./lists/adjectives-2.json').adjectives);
