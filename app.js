@@ -83,14 +83,24 @@ try {
 	  console.log("Trimming maps for memory");
 	  let wordCount = freq.size;
 	  let wordsErased = 0;
+	  let wordsToDeleteFromBigram = [];
 	  freq.forEach((frequency,key) => {
 	      if (frequency < MIN_FREQUENCY_TO_STORE) {
+		  wordsToDeleteFromBigram.push(key);
 		  freq.delete(key);
-		  
-		  // also delete bigrams with the key in the first or the second position
-		  // ...
-
 		  wordsErased++;
+	      }
+	  })
+	  // also delete bigrams with the words to delete
+	  // in the first or the second position
+	  bigrams.forEach((f,k) => {
+	      let keyArray = JSON.parse(k);
+	      for (var element of wordsToDeleteFromBigram) {
+		  if (keyArray[0] == element || keyArray[1] == element) {
+		      console.log("Deleting " + k);
+		      bigrams.delete(k);
+		      break;
+		  }
 	      }
 	  })
 	  let remaining = wordCount - wordsErased;
