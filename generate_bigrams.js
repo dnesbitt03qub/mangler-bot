@@ -28,7 +28,6 @@ var bigrams = new Map();
 // freq map of int - one key
 var freq = new Map();
 try {
-  if (ngramMangling) {
       // Load the source text from clean word list
 
       for (var listPath of listPaths) {
@@ -104,7 +103,6 @@ try {
       console.log("Bigrams written to file");
       fs.writeFileSync(FREQ_PATH,JSON.stringify(freq));
       console.log("Freq written to file");
-  }
 
 } catch(e) {
     console.error(e);
